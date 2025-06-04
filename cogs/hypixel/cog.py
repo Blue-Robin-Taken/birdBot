@@ -19,6 +19,13 @@ class HypixelCog(commands.Cog):
                 finalString += char
         return finalString
 
+    @staticmethod
+    async def checkIfIndex(inputDict, inputString):
+        if inputString in inputDict:
+            return inputDict[inputString]
+        else:
+            return "UNKNOWN"
+
     @discord.slash_command(guild_ids=[os.environ['GUILD_ID']])
     async def get_minecraft_uuid(self, context: discord.ApplicationContext, user: str):
         mojangRequest = requests.get(
@@ -67,10 +74,17 @@ class HypixelCog(commands.Cog):
         hypixelRequestGuildJSON = json.loads(hypixelRequestGuild.text)
         print(hypixelRequestPlayerJSON)
 
-        guildName = hypixelRequestGuildJSON['guild']['name']
-
+        guildName = (await self.checkIfIndex(hypixelRequestGuildJSON, 'guild'))
+        if guildName != "UNKNOWN" and isinstance(guildName, dict):
+            guildName = guildName['name']
+        if 'newPackageRank' in hypixelRequestPlayerJSON['player']:
+            rank = hypixelRequestPlayerJSON['player']['newPackageRank']
+        else:
+            rank = await self.checkIfIndex(hypixelRequestPlayerJSON['player'], 'rank')
         finalEmbed = discord.Embed(title=f'Stats for: {username}',
-                                   description=f"Guild: {guildName}")
+                                   description=f"Guild: {guildName} \n"
+                                               f"Rank: {rank}",
+                                   color=discord.Color.random())
         await context.respond(embed=finalEmbed)
 
 
