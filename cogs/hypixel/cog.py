@@ -36,9 +36,9 @@ class HypixelCog(commands.Cog):
 
     @discord.slash_command(guilds_ids=[os.environ['GUILD_ID']])
     async def hypixel_stats(self, context: discord.ApplicationContext, user: str):
-        mojangUserUUID = user
+        mojangUserUUID = await self.sanitize_characters(user)
         if not len(user) > 16:
-            # fetch to get the user's
+            # fetch to get the user's UUID
             mojangRequest = requests.get(
                 f"https://api.mojang.com/users/profiles/minecraft/{await self.sanitize_characters(user.strip())}")
             mojangRequestJSON = json.loads(mojangRequest.text)
@@ -46,8 +46,12 @@ class HypixelCog(commands.Cog):
             if 'id' not in mojangRequestJSON.keys():
                 return await context.respond('User does not exist', ephemeral=True)
 
-            mojangUserUUID = mojangRequest['id']
-        await context.respond(mojangUserUUID.content)
+            mojangUserUUID = mojangRequestJSON['id']
+        # Make the request to Hypixel
+        hypixelRequest = requests.get(f"https://api.hypixel.net/v2/player?uuid={mojangUserUUID}", headers={'API-KEY': os.environ['HYPIXEL_API_KEY']})
+        hypixelRequestJSON = json.loads(hypixelRequest.text)
+
+        await context.respond(mojangUserUUID)
 
 
 def setup(bot):
